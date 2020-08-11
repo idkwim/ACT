@@ -51,9 +51,9 @@ INTERCEPT_INFO InterceptProcedure(HANDLE ProcessHandle)
 
 	if (Info.InterceptAddresses == NULL ||
 		Info.InterceptSymbol == NULL ||
-		Info.OriginalByte == NULL)	
+		Info.OriginalByte == NULL)
 	{
-		printf("failed to memory allocation!\n");
+		fprintf(stdout, "failed to memory allocation!\n");
 
 		ExitProcess(0);
 	}
@@ -84,6 +84,7 @@ RtlExitUserThread
 	DenyProcedure[8] = GetProcedureAddress(NtDll, "DbgUiRemoteBreakin");
 	DenyProcedure[9] = GetProcedureAddress(NtDll, "DbgBreakPoint");
 	DenyProcedure[10] = GetProcedureAddress(NtDll, "RtlExitUserThread");
+
 
 	ADDRESS Procedure;
 	ADDRESS Symbol;
@@ -138,8 +139,12 @@ void UninterceptProcedure(HANDLE ProcessHandle, INTERCEPT_INFO Info)
 #define STRING_COMPARE 2
 int CompareCondition;
 
-void DebuggeeEventHandler(HANDLE ProcessHandle, HANDLE ThreadHandle, const char *NameFinder, const char *NameSkiper, INTERCEPT_INFO Info)
+void DebuggeeEventHandler(HANDLE ProcessHandle, HANDLE ThreadHandle, const char* NameFinder, const char* NameSkiper, INTERCEPT_INFO Info)
 {
+	printf("[*] Option: %d\n", CompareCondition);
+	printf("[*] Name Finder: %s\n", NameFinder);
+	printf("[*] Name Skiper: %s\n", NameSkiper);
+
 	DEBUG_EVENT DebugEvent;
 	EXCEPTION_RECORD ExceptionRecord;
 	MEMSET(&ExceptionRecord, 0, sizeof(ExceptionRecord));
@@ -162,7 +167,7 @@ void DebuggeeEventHandler(HANDLE ProcessHandle, HANDLE ThreadHandle, const char 
 
 		if (DebugEvent.dwDebugEventCode == CREATE_PROCESS_DEBUG_EVENT)
 		{
-			printf("[*] Debbugger attach..\n");
+			fprintf(stdout, "[*] Debbugger attach..\n");
 		}
 
 		if (DebugEvent.dwDebugEventCode == EXIT_PROCESS_DEBUG_EVENT)
@@ -203,24 +208,62 @@ void DebuggeeEventHandler(HANDLE ProcessHandle, HANDLE ThreadHandle, const char 
 #endif // _WIN64
 					clock_t Print1 = clock();
 
-					if (strcmp( (const char *)Info.InterceptSymbol[i], NameSkiper) != 0)
+					BOOL NameSearchError = FALSE;
+					BOOL SkipSearchError = FALSE;
+					const char* Name = NULL;
+
+					ReadProcessMemory(ProcessHandle, (LPVOID)CallerPointer, &ReturnAddress, sizeof(ReturnAddress), NULL);
+
+					if (NameFinder != NULL)
 					{
-						ReadProcessMemory(
-							ProcessHandle,
-							(LPVOID)CallerPointer,
-							&ReturnAddress,
-							sizeof(ReturnAddress),
-							NULL);
-
-						if (CompareCondition == STRING_FIND && NameFinder != NULL && strstr((const char*)Info.InterceptSymbol[i], NameFinder) != NULL)
+						if (CompareCondition == STRING_COMPARE)
 						{
-							printf("[RETN to %p] <= [CALL at %p]: %s\n", ReturnAddress, ExceptionRecord.ExceptionAddress, Info.InterceptSymbol[i]);
+							if (strcmp((const char*)Info.InterceptSymbol[i], NameFinder) != 0)
+							{
+								NameSearchError = TRUE;
+
+								if ((Name = strstr((const char*)Info.InterceptSymbol[i], NameFinder)) == NULL)
+								{
+									NameSearchError = TRUE;
+
+									if (NameSkiper != NULL)
+									{
+										if (strstr((const char*)Info.InterceptSymbol[i], NameSkiper) == NULL)
+										{
+											fprintf(stdout, "[RETN to %p] <= [CALL at %p]: %s\n", ReturnAddress, ExceptionRecord.ExceptionAddress, Info.InterceptSymbol[i]);
+										}
+									}
+									else
+									{
+										fprintf(stdout, "[RETN to %p] <= [CALL at %p]: %s\n", ReturnAddress, ExceptionRecord.ExceptionAddress, Info.InterceptSymbol[i]);
+									}
+								}
+							}
 						}
 
-						if (CompareCondition == STRING_COMPARE && NameFinder != NULL && strcmp((const char*)Info.InterceptSymbol[i], NameFinder) != NULL)
+						if (CompareCondition == STRING_FIND)
 						{
-							printf("[RETN to %p] <= [CALL at %p]: %s\n", ReturnAddress, ExceptionRecord.ExceptionAddress, Info.InterceptSymbol[i]);
+							if ((Name = strstr((const char*)Info.InterceptSymbol[i], NameFinder)) != NULL)
+							{
+								NameSearchError = TRUE;
+
+								if (NameSkiper != NULL)
+								{
+									if (strstr((const char*)Info.InterceptSymbol[i], NameSkiper) == NULL)
+									{
+										fprintf(stdout, "[RETN to %p] <= [CALL at %p]: %s\n", ReturnAddress, ExceptionRecord.ExceptionAddress, Info.InterceptSymbol[i]);
+									}
+								}
+								else
+								{
+									fprintf(stdout, "[RETN to %p] <= [CALL at %p]: %s\n", ReturnAddress, ExceptionRecord.ExceptionAddress, Info.InterceptSymbol[i]);
+								}
+							}
 						}
+					}
+					else
+					{
+						NameSearchError = TRUE;
 					}
 
 					SetThreadContext(CurrentThread, &Context);
@@ -241,11 +284,11 @@ void DebuggeeEventHandler(HANDLE ProcessHandle, HANDLE ThreadHandle, const char 
 					/*
 					if (strcmp((const char*)Info.InterceptSymbol[i], "NtDeviceIoControlFile") == 0)
 					{
-						printf("[+] Wait..\n");
+						fprintf(stdout, "[+] Wait..\n");
 						getchar();
 					}
 					*/
-					
+
 					//pause
 					CreateInt3(
 						ProcessHandle,
@@ -289,14 +332,14 @@ const char* ParamList[] = {
 	"-open"
 };
 
-void QuitHandler(HANDLE *hProcess)
+void QuitHandler(HANDLE* hProcess)
 {
 	_getch();
 
 	TerminateProcess(*hProcess, 0);
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
 	PEBStartup();
 
@@ -308,6 +351,7 @@ int main(int argc, char **argv)
 	PROCESS_INFORMATION pi = { 0 };
 	STARTUPINFOA si = { 0 };
 	si.cb = sizeof(STARTUPINFO);
+	si.dwFlags = SW_SHOW;
 
 	for (int i = 1; i != argc; i += 1)
 	{
@@ -345,12 +389,10 @@ int main(int argc, char **argv)
 
 	if (CreateProcessA(NULL, ExecuteCommand, NULL, NULL, TRUE, CREATE_SUSPENDED, NULL, NULL, &si, &pi))
 	{
-		printf("[*] Execute '%s'\n", ExecuteCommand);
-		printf("[*] Find '%s'\n", ProcedureFindName);
-		printf("[*] Skip '%s'\n", ProcedureSkipName);
+		fprintf(stdout, "[*] Execute '%s'\n", ExecuteCommand);
 
-		printf("\n[*] Intercept module procedure\n");
-		
+		fprintf(stdout, "\n[*] Intercept module procedure\n");
+
 		//debug init
 		INTERCEPT_INFO Info = InterceptProcedure(pi.hProcess);
 		ResumeThread(pi.hThread);
@@ -365,11 +407,11 @@ int main(int argc, char **argv)
 		//terminate
 		UninterceptProcedure(pi.hProcess, Info);
 		TerminateThread(pi.hThread, 0);
-		printf("[*] Debuggee is terminated..\n");
+		fprintf(stdout, "[*] Debuggee is terminated..\n");
 	}
 	else
 	{
-		printf("[!] Execute error '%s'\n", ExecuteCommand);
+		fprintf(stdout, "[!] Execute error '%s'\n", ExecuteCommand);
 	}
 
 	return 0;
