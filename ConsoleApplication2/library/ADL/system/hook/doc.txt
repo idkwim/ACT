@@ -1,0 +1,3 @@
+The hooks project!
+
+'Easy' & 'Powerful' & 'Universal' WINAPI hook library for user mode

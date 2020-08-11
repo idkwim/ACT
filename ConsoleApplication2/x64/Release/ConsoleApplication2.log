@@ -1,0 +1,13 @@
+﻿  ConsoleApplication2.cpp
+C:\Users\trait\source\repos\ConsoleApplication2\ConsoleApplication2\ConsoleApplication2.cpp(94,27): warning C4101: 'MemoryInfo' :참조되지 않은 지역 변수입니다.
+C:\Users\trait\source\repos\ConsoleApplication2\ConsoleApplication2\ConsoleApplication2.cpp(217,15): warning C4477: 'printf' : 서식 문자열 '%p'에 'void *' 형식의 인수가 필요하지만 variadic 인수 1의 형식이 'INT64'입니다.
+C:\Users\trait\source\repos\ConsoleApplication2\ConsoleApplication2\ConsoleApplication2.cpp(217,15): warning C4477: 'printf' : 서식 문자열 '%s'에 'char *' 형식의 인수가 필요하지만 variadic 인수 3의 형식이 'INT64'입니다.
+C:\Users\trait\source\repos\ConsoleApplication2\ConsoleApplication2\ConsoleApplication2.cpp(222,15): warning C4477: 'printf' : 서식 문자열 '%p'에 'void *' 형식의 인수가 필요하지만 variadic 인수 1의 형식이 'INT64'입니다.
+C:\Users\trait\source\repos\ConsoleApplication2\ConsoleApplication2\ConsoleApplication2.cpp(222,15): warning C4477: 'printf' : 서식 문자열 '%s'에 'char *' 형식의 인수가 필요하지만 variadic 인수 3의 형식이 'INT64'입니다.
+C:\Users\trait\source\repos\ConsoleApplication2\ConsoleApplication2\ConsoleApplication2.cpp(146,27): warning C4101: 'MemoryInfo' :참조되지 않은 지역 변수입니다.
+  코드를 생성하고 있습니다.
+  4 of 16 functions (25.0%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    0 functions had inline decision re-evaluated but remain unchanged
+  코드를 생성했습니다.
+  ConsoleApplication2.vcxproj -> C:\Users\trait\source\repos\ConsoleApplication2\x64\Release\ConsoleApplication2.exe

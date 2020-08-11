@@ -1,0 +1,1 @@
+"./x64/Release/ConsoleApplication2.exe" -open C:/windows/system32/tasklist.exe -find Open -skip Delay
